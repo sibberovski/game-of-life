@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define DEAD_PERCENTAGE 92 //Decides the chance of a cell being dead when initialising the game.
+#define DEAD_PERCENTAGE 92 //Decides the chance of a cell being dead when initialising the game. (92 is arbitrary)
 #define SLEEP_TIME 200000  //The time to sleep between updates, in microseconds
 #define ALIVE_CELL '#'
 #define DEAD_CELL ' '
@@ -19,7 +19,7 @@ typedef struct game {
 void game_alloc(game *g, int width, int height);
 void init_game(game *g);
 void copy_game(game *to, game *from);
-int alive_neighbours(game *g, int x, int y); //needs testing, hopefully the error is here
+int alive_neighbours(game *g, int x, int y);
 void cleanup(int error);
 
 int main(int argc, char **argv)
