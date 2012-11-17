@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define DEAD_PERCENTAGE 92 //Decides the chance of a cell being dead when initialising the game.
+#define DEAD_PERCENTAGE 93 //Decides the chance of a cell being dead when initialising the game.
 #define SLEEP_TIME 200000  //The time to sleep between updates, in microseconds
 #define ALIVE_CELL '#'
 #define DEAD_CELL ' '
