@@ -5,7 +5,10 @@
 #include <unistd.h>
 #include <string.h>
 
+#define DEAD_PERCENTAGE 92 //Decides the chance of a cell being dead when initialising the game.
 #define SLEEP_TIME 200000  //The time to sleep between updates, in microseconds
+#define ALIVE_CELL '#'
+#define DEAD_CELL ' '
 
 typedef struct game {
 	char **board;
@@ -13,9 +16,9 @@ typedef struct game {
 	int height;
 } game;
 
-void game_alloc(game *g,int width, int height);
+void game_alloc(game *g, int width, int height);
 void init_game(game *g);
-void copy_game(game *to, game *from); //needs error checking
+void copy_game(game *to, game *from);
 int alive_neighbours(game *g, int x, int y); //needs testing, hopefully the error is here
 void cleanup(int error);
 
@@ -43,10 +46,10 @@ int main(int argc, char **argv)
 			for (x = 0; x < current_game.width; ++x) {
 				int alive = alive_neighbours(&current_game, x, y);
 				if ((alive < 2) || (alive > 3)) {
-					current_game.board[y][x] = '.';
+					current_game.board[y][x] = DEAD_CELL;
 				}
-				else if ((alive == 3) || (alive == 2 && current_game.board[y][x] == '#')) {
-					current_game.board[y][x] = '#';
+				else if ((alive == 3) || (alive == 2 && current_game.board[y][x] == ALIVE_CELL)) {
+					current_game.board[y][x] = ALIVE_CELL;
 				}
 			}
 		}
@@ -73,11 +76,11 @@ void init_game(game *g)
 	int x, y;
 	for (y = 0; y < g->height; ++y) {
 		for (x = 0; x < g->width; ++x) {
-			if ((rand() % 100) > 90) { //Magic number
-				g->board[y][x] = '#';
+			if ((rand() % 100) > DEAD_PERCENTAGE) { //Not very statistically correct
+				g->board[y][x] = ALIVE_CELL;
 			}
 			else {
-				g->board[y][x] = '.';
+				g->board[y][x] = DEAD_CELL;
 			}
 		}
 	}
@@ -104,10 +107,10 @@ int alive_neighbours(game *g, int x, int y)
 			if ((x + x_offs >= 0) && (x + x_offs < g->width) &&
 				(y + y_offs >= 0) && (y + y_offs < g->height))
 			{
-				if ((x == 0) && (y == 0)) {
+				if ((x_offs == 0) && (y_offs == 0)) {
 					continue;
 				}
-				if (g->board[y + y_offs][x + x_offs] == '#') {
+				if (g->board[y + y_offs][x + x_offs] == ALIVE_CELL) {
 					++alive;
 				}
 			}
