@@ -3,113 +3,121 @@
 #include <ncurses.h>
 #include <time.h>
 #include <unistd.h>
-
-/*
- * TODO: game probably should be a struct, with width and height
- */
+#include <string.h>
 
 #define SLEEP_TIME 200000  //The time to sleep between updates, in microseconds
 
-char** make_game(int width, int height);
-void copy_game(char **to, char **from, int width, int height);
-int alive_neighbours(char **game, int x, int y, int width, int height);
+typedef struct game {
+	char **board;
+	int width;
+	int height;
+} game;
+
+void game_alloc(game *g,int width, int height);
+void init_game(game *g);
+void copy_game(game *to, game *from); //needs error checking
+int alive_neighbours(game *g, int x, int y); //needs testing, hopefully the error is here
+void cleanup(int error);
 
 int main(int argc, char **argv)
 {
-	int max_x, max_y;
+	int height, width;
 	int x, y;
-	char **prev_game;
-	char **game;
-
+	game current_game;
+	game prev_game;
 	srand(time(NULL));
 	initscr();
-	getmaxyx(stdscr, max_y, max_x);
-	game = make_game(max_x, max_y);
-	prev_game = make_game(max_x, max_y); //Because the malloc is inside the function. Change this
-	copy_game(prev_game, game, max_x, max_y);
+	getmaxyx(stdscr, height, width);
+	game_alloc(&current_game, width, height);
+	game_alloc(&prev_game, width, height);
+	init_game(&current_game);
+	copy_game(&prev_game, &current_game);
 	for (;;) {
 		move(0, 0);
-		for (y = 0; y < max_y; ++y) {
-			for (x = 0; x < max_x; ++x) {
-				addch(game[y][x]);
+		for (y = 0; y < current_game.height; ++y) {
+			for (x = 0; x < current_game.width; ++x) {
+				addch(current_game.board[y][x]);
 			}
 		}
-		for (y = 0; y < max_y; ++y) {
-			for (x = 0; x < max_x; ++x) {
-				int alive = alive_neighbours(prev_game, x, y, max_x, max_y);
-				/*if (prev_game[y][x] == '#') { //could be more readable
-					if ((alive < 2) || (alive > 3)) {
-						game[y][x] = '.';
-					}
-				}
-				else if (alive == 3) {
-					game[y][x] = '#';
-				}*/
+		for (y = 0; y < current_game.height; ++y) {
+			for (x = 0; x < current_game.width; ++x) {
+				int alive = alive_neighbours(&current_game, x, y);
 				if ((alive < 2) || (alive > 3)) {
-					game[y][x] = '.';
+					current_game.board[y][x] = '.';
 				}
-				else if ((alive == 3) || (alive == 2 && game[y][x] == '#')){
-					game[y][x] = '#';
+				else if ((alive == 3) || (alive == 2 && current_game.board[y][x] == '#')) {
+					current_game.board[y][x] = '#';
 				}
 			}
 		}
-		copy_game(prev_game, game, max_x, max_y);
+		copy_game(&prev_game, &current_game);
 		refresh();
 		usleep(SLEEP_TIME);
 	}
-	endwin();
-	return 0;
+	cleanup(0);
 }
 
-char** make_game(int w, int h)
+void game_alloc(game* g, int width, int height)
 {
-	char **game;
-	int x, y;
-	game = malloc(sizeof(char*) * h);
-	for (x = 0; x < w; ++x) {
-		game[x] = malloc(sizeof(char) * w);
+	int i;
+	g->width = width;
+	g->height = height;
+	g->board = malloc(sizeof(char*) * height);
+	for (i = 0; i < width; ++i) {
+		g->board[i] = malloc(sizeof(char) * width);
 	}
-	for (y = 0; y < h; ++y) {
-		for (x = 0; x < w; ++x) {
-			if ((rand() % 10) > 8) { //Magic number
-				game[y][x] = '#';
+}
+
+void init_game(game *g)
+{
+	int x, y;
+	for (y = 0; y < g->height; ++y) {
+		for (x = 0; x < g->width; ++x) {
+			if ((rand() % 100) > 90) { //Magic number
+				g->board[y][x] = '#';
 			}
 			else {
-				game[y][x] = '.';
+				g->board[y][x] = '.';
 			}
 		}
 	}
-	return game;
 }
 
-void copy_game(char **to, char **from, int w, int h)
+void copy_game(game *to, game *from)
 {
-	int x, y;
-	for (y = 0; y < h; ++y) {
-		for (x = 0; x < w; ++x) {
-			to[y][x] = from[y][x];
-		}
+	if ((to->width != from->width) || (to->height != from->height)) {
+		fprintf(stderr, "copy_game handed games of different sizes. Exiting\n");
+		cleanup(1);
+	}
+	int i;
+	for (i = 0; i < from->height; ++i) {
+		memcpy(to->board[i], from->board[i], from->width);
 	}
 }
 
-int alive_neighbours(char **game, int x, int y, int w, int h)
+int alive_neighbours(game *g, int x, int y)
 {
 	int alive = 0;
 	int x_offs, y_offs;
 	for (y_offs = -1; y_offs <= 1; ++y_offs) {
 		for (x_offs = -1; x_offs <= 1; ++x_offs) {
-			if ((x + x_offs >= 0) && (x + x_offs < w) &&
-				(y + y_offs >= 0) && (y + y_offs < h))
+			if ((x + x_offs >= 0) && (x + x_offs < g->width) &&
+				(y + y_offs >= 0) && (y + y_offs < g->height))
 			{
-					fprintf(stderr, "%d + %d, %d + %d is checked\n", y, y_offs, x, x_offs);
 				if ((x == 0) && (y == 0)) {
 					continue;
 				}
-				if (game[y + y_offs][x + x_offs] == '#') {
+				if (g->board[y + y_offs][x + x_offs] == '#') {
 					++alive;
 				}
 			}
 		}
 	}
 	return alive;
+}
+
+void cleanup(int error)
+{
+	endwin();
+	exit(error);
 }
