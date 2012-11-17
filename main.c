@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 {
 	int max_x, max_y;
 	int x, y;
-	char **prrev_game;
+	char **prev_game;
 	char **game;
 
 	srand(time(NULL));
