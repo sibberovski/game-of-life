@@ -1,0 +1,2 @@
+Conway's game of life implemented in C / ncurses.
+It is currently very simple, and does not support user generated levels.
